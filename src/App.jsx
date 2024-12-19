@@ -1,35 +1,118 @@
 import TaskList from './components/TaskList.jsx';
+import NewTaskForm from './components/NewTaskForm.jsx';
 import './App.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 
-const TASKS = [
-  {
-    id: 1,
-    title: 'Mow the lawn',
-    isComplete: false,
-  },
-  {
-    id: 2,
-    title: 'Cook Pasta',
-    isComplete: false,
-  },
-];
+const kbaseURL = 'http://localhost:5000';
+
+const convertFromApi = (apiTask) => {
+  const { is_complete, ...rest } = apiTask;
+  return {
+    ...rest,
+    isComplete: is_complete
+  };
+};
+
+const getAllTasksApi = async () => {
+  try {
+    const response = await axios.get(`${kbaseURL}/tasks`);
+    return response.data.map(convertFromApi);
+  }
+  catch (error) {
+    console.error('Error fetching tasks', error);
+    return [];
+  }
+};
+
+const createTaskApi = async (task) => {
+  try {
+    const response = await axios.post(`${kbaseURL}/tasks`, {
+      title: task.title,
+      description: task.description
+    });
+    // The response includes the task in a nested "task" property
+    return convertFromApi(response.data.task);
+  }
+  catch (error) {
+    console.error('Error creating task', error);
+    return null;
+  }
+};
+
+const markTaskCompleteApi = async (id, isComplete) => {
+  try {
+    await axios.patch(`${kbaseURL}/tasks/${id}/mark_complete`, {
+      is_complete: isComplete,
+    });
+  }
+  catch (error) {
+    console.error('Error updating task', error);
+  }
+};
+
+const markTaskIncompleteApi = async (id, isComplete) => {
+  try {
+    await axios.patch(`${kbaseURL}/tasks/${id}/mark_incomplete`, {
+      is_complete: isComplete,
+    });
+  }
+  catch (error) {
+    console.error('Error updating task', error);
+  }
+};
+
+const deleteTaskApi = async (id) => {
+  try {
+    await axios.delete(`${kbaseURL}/tasks/${id}`);
+  }
+  catch (error) {
+    console.error('Error deleting task', error);
+  }
+};
 
 const App = () => {
-  const [tasks, setComplete] = useState(TASKS);
+  const [tasks, setTasks] = useState([]);
+
+  const getTasks = async () => {
+    const tasks = await getAllTasksApi();
+    setTasks(tasks);
+  };
+
+  useEffect(() => {
+    getTasks();
+  }, []);
+
+  const createTask = (taskData) => {
+    createTaskApi(taskData).then(task => {
+      if (task) {
+        setTasks([...tasks, task]);
+      }
+    });
+  };
 
   const updateTaskStatus = (id) => {
-    setComplete(tasks.map(task => {
-      if (task.id === id) {
-        return { ...task, isComplete : !task.isComplete};
-      } else {
-        return task;
-      }
-    }));
+    const task = tasks.find(t => t.id === id);
+    const newStatus = !task.isComplete;
+    const apiCall = newStatus
+      ? markTaskCompleteApi(id, newStatus)
+      : markTaskIncompleteApi(id, newStatus);
+
+    apiCall.then(() => {
+      setTasks(tasks.map(task => {
+        if (task.id === id) {
+          return { ...task, isComplete: newStatus };
+        } else {
+          return task;
+        }
+      }));
+    });
   };
 
   const deleteTask = id => {
-    setComplete(tasks =>tasks.filter(task => task.id !== id));
+    deleteTaskApi(id).then(() => {
+      setTasks(tasks => tasks.filter(task => task.id !== id));
+    });
   };
 
   return (
@@ -39,10 +122,11 @@ const App = () => {
       </header>
       <main>
         <div>
-          {<TaskList tasks={tasks}
+          <NewTaskForm createTask={createTask} />
+          <TaskList tasks={tasks}
             onTaskToggle={updateTaskStatus}
             onDeleteTask={deleteTask}
-          />}
+          />
         </div>
       </main>
     </div>

@@ -1,83 +1,43 @@
 import { render, screen } from '@testing-library/react';
-import { vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import Task from './Task';
 
 describe('Task', () => {
-  test('Renders title content', () => {
-    // Act
-    render(
-      <Task
-        id={1}
-        title={'Test Title'}
-        isComplete={true}
-        onClickCallback={() => { }}
-        onDeleteCallback={() => { }}
-      />
-    );
+  const mockOnTaskToggle = vi.fn();
+  const mockOnDeleteTask = vi.fn();
+  const defaultProps = {
+    id: 1,
+    title: 'Test Task',
+    isComplete: false,
+    onTaskToggle: mockOnTaskToggle,
+    onDeleteTask: mockOnDeleteTask
+  };
 
-    // Assert
-    expect(screen.getByText('Test Title')).toBeInTheDocument();
+  beforeEach(() => {
+    mockOnTaskToggle.mockClear();
+    mockOnDeleteTask.mockClear();
   });
 
-  test.skip('Runs callbacks when buttons clicked', () => {
-    // Arrange
-    const clickCallback = vi.fn();
-    const deleteCallback = vi.fn();
-
-    // Act
-    render(
-      <Task
-        id={42}
-        title={'Test Title'}
-        isComplete={true}
-        onClickCallback={clickCallback}
-        onDeleteCallback={deleteCallback}
-      />
-    );
-
-    screen.getByText('Test Title').click();
-    screen.getByTestId('delete button 42').click();
-
-    // Assert
-    expect(clickCallback).toHaveBeenCalledTimes(1);
-    expect(deleteCallback).toHaveBeenCalledTimes(1);
-    // Check parameters passed to callbacks
-    expect(clickCallback).toHaveBeenCalledWith(42);
-    expect(deleteCallback).toHaveBeenCalledWith(42);
+  test('renders task title', () => {
+    render(<Task {...defaultProps} />);
+    expect(screen.getByText('Test Task')).toBeInTheDocument();
   });
 
-  test('Task has class "tasks__item__toggle--completed" if done is true', () => {
-    // Act
-    render(
-      <Task
-        id={1}
-        title={'Test Title'}
-        isComplete={true}
-        onClickCallback={() => { }}
-        onDeleteCallback={() => { }}
-      />
-    );
-
-    expect(screen.getByText('Test Title')).toHaveClass(
-      'tasks__item__toggle--completed'
-    );
+  test('calls onTaskToggle when clicked', async () => {
+    render(<Task {...defaultProps} />);
+    await userEvent.click(screen.getByText('Test Task'));
+    expect(mockOnTaskToggle).toHaveBeenCalledWith(1);
   });
 
-  test('Task does not have class "tasks__item__toggle--completed" if done is false', () => {
-    // Act
-    render(
-      <Task
-        id={1}
-        title={'Test Title'}
-        isComplete={false}
-        onClickCallback={() => { }}
-        onDeleteCallback={() => { }}
-      />
-    );
+  test('calls onDeleteTask when delete button clicked', async () => {
+    render(<Task {...defaultProps} />);
+    await userEvent.click(screen.getByText('x'));
+    expect(mockOnDeleteTask).toHaveBeenCalledWith(1);
+  });
 
-    // Assert
-    expect(screen.getByText('Test Title')).not.toHaveClass(
-      'tasks__item__toggle--completed'
-    );
+  test('applies completed class when task is complete', () => {
+    render(<Task {...defaultProps} isComplete={true} />);
+    expect(screen.getByRole('button', { name: 'Test Task' }))
+      .toHaveClass('tasks__item__toggle--completed');
   });
 });

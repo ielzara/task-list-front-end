@@ -1,32 +1,37 @@
 import { render, screen } from '@testing-library/react';
 import TaskList from './TaskList';
 
-describe('TaskList Renders', () => {
-  const tasks = [
-    {
-      id: 1,
-      title: 'task one',
-      isComplete: false,
-    },
-    {
-      id: 42,
-      title: 'task 2',
-      isComplete: true,
-    },
+describe('TaskList', () => {
+  const mockTasks = [
+    { id: 1, title: 'Task 1', isComplete: false },
+    { id: 2, title: 'Task 2', isComplete: true }
   ];
 
-  test('renders tasks', () => {
-    // Act
+  const mockOnTaskToggle = vi.fn();
+  const mockOnDeleteTask = vi.fn();
+
+  test('renders list of tasks', () => {
     render(
       <TaskList
-        tasks={tasks}
-        onTaskClickCallback={() => {}}
-        onTaskDeleteCallback={() => {}}
+        tasks={mockTasks}
+        onTaskToggle={mockOnTaskToggle}
+        onDeleteTask={mockOnDeleteTask}
       />
     );
 
-    // Assert
-    expect(screen.getByText('task one')).toBeInTheDocument();
-    expect(screen.getByText('task 2')).toBeInTheDocument();
+    expect(screen.getByText('Task 1')).toBeInTheDocument();
+    expect(screen.getByText('Task 2')).toBeInTheDocument();
+  });
+
+  test('renders empty list when no tasks', () => {
+    render(
+      <TaskList
+        tasks={[]}
+        onTaskToggle={mockOnTaskToggle}
+        onDeleteTask={mockOnDeleteTask}
+      />
+    );
+
+    expect(screen.queryByRole('listitem')).not.toBeInTheDocument();
   });
 });
