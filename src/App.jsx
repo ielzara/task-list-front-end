@@ -40,22 +40,20 @@ const createTaskApi = async (task) => {
   }
 };
 
-const markTaskCompleteApi = async (id, isComplete) => {
+const markTaskCompleteApi = async (id) => {
   try {
-    await axios.patch(`${kbaseURL}/tasks/${id}/mark_complete`, {
-      is_complete: isComplete,
-    });
+    const response = await axios.patch(`${kbaseURL}/tasks/${id}/mark_complete`);
+    return convertFromApi(response.data.task);
   }
   catch (error) {
     console.error('Error updating task', error);
   }
 };
 
-const markTaskIncompleteApi = async (id, isComplete) => {
+const markTaskIncompleteApi = async (id) => {
   try {
-    await axios.patch(`${kbaseURL}/tasks/${id}/mark_incomplete`, {
-      is_complete: isComplete,
-    });
+    const response = await axios.patch(`${kbaseURL}/tasks/${id}/mark_incomplete`);
+    return convertFromApi(response.data.task);
   }
   catch (error) {
     console.error('Error updating task', error);
@@ -95,13 +93,13 @@ const App = () => {
     const task = tasks.find(t => t.id === id);
     const newStatus = !task.isComplete;
     const apiCall = newStatus
-      ? markTaskCompleteApi(id, newStatus)
-      : markTaskIncompleteApi(id, newStatus);
+      ? markTaskCompleteApi(id)
+      : markTaskIncompleteApi(id);
 
-    apiCall.then(() => {
+    apiCall.then((apiTask) => {
       setTasks(tasks.map(task => {
         if (task.id === id) {
-          return { ...task, isComplete: newStatus };
+          return apiTask;
         } else {
           return task;
         }
